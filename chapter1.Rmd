@@ -11,3 +11,6 @@ date()
 ```
 The text continues here.
 
+This course seems very useful. I would like to get **more comfortable with R**. That would enable me to, for example, do data visualisation with R without always taking ages to re-familiarise myself with how was everything done. I'd also like to learn new (to me) useful things, like using this R Markdown. Unfortunately, I am currently very busy writing papers, so I'm afraid I might not have enough time for this course. I'll still try to take this as my free-time activity.
+
+[My GitHub repository](https://github.com/KatjaJunttila/IODS-project/)
