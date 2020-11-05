@@ -1,13 +1,87 @@
-# Insert chapter 2 title here
+# Regression and model validation
 
-*Describe the work you have done this week and summarize your learning.*
-
-- Describe your work and results clearly. 
-- Assume the reader has an introductory course level understanding of writing and reading R code as well as statistical methods.
-- Assume the reader has no previous knowledge of your data or the more advanced methods you are using.
 
 ```{r}
 date()
 ```
 
-Here we go again...
+## Loading and inspecting the data
+
+I have created a dataset, which is a subset of learning related data by Kimmo Vehkalahti. I will load the dataset and inspect it's dimensions:
+
+```{r}
+lrn14 <- read.csv("data/learning2014.csv", sep = ",", header = T)
+dim(lrn14)
+```
+Let's inspect the structure as well:
+
+```{r}
+str(lrn14)
+```
+This dataset has 166 observations of 7 variables. The variable names are gender, age, attitude, deep, stra, surf, and points. Gender and age are quite self explanatory. Attitude measures student's global attitude towards statistics. Deep, stra, and surf are combined variables of deep, strategic, and surface learning approaches, respectively. Points refers to exam points.
+
+Let's visualise the data to see how it looks. I'm plotting all possible scatter plots from the columns of the data. The first column, gender, does not have numerical values, so I'm excluding it.
+
+```{r}
+pairs(lrn14[-1])
+```
+
+This gives a basic idea of how the data look. If we want a more detailed visualisation of the variables and their distributions, we can use ggpairs(). To use that, we need to access GGally and ggplot2 libraries.
+
+```{r}
+library(GGally)
+library(ggplot2)
+
+# Create more detailed plot.
+
+p <- ggpairs(lrn14,
+             mapping = aes(col = gender, alpha = 0.4),
+             lower = list(combo = wrap("facethist", bins = 20)),
+             upper = list(continuous = wrap("cor", size = 2.5))) + theme(axis.text.x = element_text(size = 6),
+      axis.text.y = element_text(size = 6))
+
+# Draw the plot.
+p
+
+```
+
+Here we have the colours defined by gender.
+
+Let's check the summaries as well:
+```{r}
+summary(lrn14)
+```
+
+The data contains more women than men. The age range in the data is 17-55 years. The distributions between men and women differ most in the attitude towards statistics.
+
+The strongest overall correlation is between attitude and points **(_r_=.437)**. This correlation is also found in both genders separately. The second strongest correlation is between surface and deep learning approaches **(_r_=-.324)**. This correlation, however, exists only for men when the gender groups are examined separately.
+
+## Fitting a regression model
+
+I'm fitting a regression model where exam points is the target variable and attitude, strategic learning, and surface learning are the explanatory variables.
+
+```{r}
+my_model <- lm(points ~ attitude + stra + surf, lrn14)
+summary(my_model)
+```
+The summary of the regression shows that attitude is the only explanatory variable in this model that is associated with exam points. More positive attitude is associated with higher exam points. The F-statistic shows a low _p_-value meaning that at least some of the coefficients are not zero. The multiple R-squared value tells that the three explanatory variables together account for about 21% of the variation in exam points.
+
+As some of the explanatory variables did not have a significant relationships with the target variable, I'm forming a new model without them.
+
+```{r}
+my_model2 <- lm(points ~ attitude, lrn14)
+summary(my_model2)
+```
+Now the model only contains an explanatory variable with a significant relationship with the target variable. The F-statistic with a low _p_-value tells that some of the coefficient differ from zero. That is, in this case, attitude is associated with higher exam points. The multiple R-squared (0.1906) tells that this model with only attitude as an explanatory variable accounts for about 19% of the variation of exam points.
+
+## Model diagnostic plots
+
+Exploring the validity of the model assumptions can be done by diagnostic plots:
+
+```{r}
+par(mfrow = c(2, 2))
+plot(my_model2, which = c(1, 2, 5))
+```
+
+The Residuals vs Fitted plot shows a quite random spread telling that the assumption of constant variance of errors is met. The idea of the Normal Q-Q plot is that the better the points follow the straight line, the better the model fits the normality assumption. So here the errors are reasonably normally distributed, although there is some deviation from the line in the lowest and highest values. The Residuals vs Leverage plot shows that there are no values that have a very high leverage. That is, there are no outliers that have an unusually high impact on the model. Thus, we can conclude that there don't seem to be big problems with the assumptions.
+

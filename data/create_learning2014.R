@@ -23,7 +23,7 @@ surface_questions <- c("SU02", "SU10", "SU18", "SU26", "SU05", "SU13", "SU21",
 strategic_questions <- c("ST01", "ST09", "ST17", "ST25", "ST04", "ST12",
                          "ST20", "ST28")
 
-# Create variables deep, surf, and stra, scale them by averaging
+# Create variables deep, surf, and stra, scale them by averaging.
 deep_columns <- select(lrn2014, one_of(deep_questions))
 lrn2014$deep <- rowMeans(deep_columns)
 
