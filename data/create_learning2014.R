@@ -1,4 +1,4 @@
-# Katja Junttila, 4.11.2020, Excercise 2
+# Katja Junttila, 4.11.2020, Exercise 2
 
 # Install dplyr package
 install.packages("dplyr")
