@@ -1,2 +1,76 @@
 # Logistic regression
 
+In this exercise, we are using a modified data set about student alcohol consumption. The original data can be found here: https://archive.ics.uci.edu/ml/datasets/Student+Performance. The data is from this study:
+
+- P. Cortez and A. Silva. Using Data Mining to Predict Secondary School Student Performance. In A. Brito and J. Teixeira Eds., Proceedings of 5th FUture BUsiness TEChnology Conference (FUBUTEC 2008) pp. 5-12, Porto, Portugal, April, 2008, EUROSIS, ISBN 978-9077381-39-7.
+
+```{r}
+alc <- read.csv("data/alc.csv")
+variable.names(alc)
+```
+
+Here are the variable names in the alc data set. The data includes measures of student achievement collected from school reports and questionnaires. The original data set consisted of two sets: performance in mathematics and performance in Portuguese language. The alc dataset is a combbination of those two original ones. I have created the variables alc_use and high_use. Alc_use is the average of weekday and weekend alcohol consumption and high_use is a logical variable which is true if alc_use is greater than 2.
+
+I'm going to study relationship between alcohol consumption and:
+
+- weekly study time
+- current health status
+- absences from school
+- final grade
+
+Here are my hypotheses:
+
+- Students whose alcohol consumption is high use less time studying.
+- High alcohol consumption is related to lower health status.
+- High alcohol consumption is related to more absences from school.
+- High alcohol consumption is related to lower final grade.
+
+I'll examine the distributions of the selected variables with box plots.
+
+```{r}
+library(ggplot2)
+gstudy <- ggplot(alc, aes(x = high_use, y = studytime))
+gstudy + geom_boxplot() + ylab("weekly study time")
+```
+
+By looking at the boxplot, it seems that weekly study time is lower for the students whose alcohol consumption is high, as expected.
+
+```{r}
+ghealth <- ggplot(alc, aes(x = high_use, y = health))
+ghealth + geom_boxplot() + ylab("current health status")
+```
+
+Contrary to my hypothesis, it seems that there is no difference in current health status between students whose alcohol consumption id high and other students.
+
+```{r}
+gabsent <- ggplot(alc, aes(x = high_use, y = absences))
+gabsent + geom_boxplot() + ylab("number of school absences")
+```
+
+The boxplot shows there are some outliers in both groups. It still seems that students whose alcohol consumption is high are absent from school more often, as hypothesised.
+
+```{r}
+ggrade <- ggplot(alc, aes(x = high_use, y = G3))
+ggrade + geom_boxplot() + ylab("final grade")
+```
+
+This boxplot shows again some outliers. It appears that the final grades may be lower in the high alcohol consumption group, as expected.
+
+Weekly study time has only four categories and current health status has five. I'll examine them by cross-tabulation.
+```{r}
+table(high_use = alc$high_use, study_time = alc$studytime)
+```
+Here's the cross table for weekly study time. This further substantiates that high alcohol consumption is related to studying less: there are few students who consume a lot of alcohol in the two categories with the highest study times.
+
+```{r}
+table(high_use = alc$high_use, health = alc$health)
+```
+As the boxplot already showed, the distributions of current health do not look that different between the groups.
+
+Next, I'm fitting a logistic regression model with the `high_use` as the target variable and `studytime`, `health`, `absences`, and `G3` as the predictors.
+```{r}
+m <- glm(high_use ~ studytime + health + absences + G3, data = alc, family = "binomial")
+summary(m)
+```
+
+
