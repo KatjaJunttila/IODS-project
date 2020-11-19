@@ -112,7 +112,7 @@ Now I'm going to use the LDA model based on the training data to predict the cla
 lda.pred <- predict(lda.fit, newdata = test)
 table(correct = correct_classes, predicted = lda.pred$class)
 ```
-From the table above, we can see that most of the cases are predicted correctly. The performance seems to be best for the high crime rate category, where all cases are predicted correctly. Lower crime rates have more incorrectly predicted cases. Both low and medium high crime rates are quite often incorrectly predicted as medium low.
+From the table above, we can see that most of the cases are predicted correctly. The performance seems to be best for the high crime rate category, where almost all cases are predicted correctly. Lower crime rates have more incorrectly predicted cases. Both low and medium high crime rates are quite often incorrectly predicted as medium low.
 
 ## K-means
 
