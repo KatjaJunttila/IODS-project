@@ -597,7 +597,7 @@ loss_func(class = alc$high_use, prob = alc$probability)</code></pre>
 <pre class="r"><code>library(boot)
 cv &lt;- cv.glm(data = alc, cost = loss_func, glmfit = m, K = 10)
 cv$delta[1]</code></pre>
-<pre><code>## [1] 0.2958115</code></pre>
+<pre><code>## [1] 0.2905759</code></pre>
 <p>My model has poorer test set performance (prediction error 0.29) compared to the model introduced in DataCamp (0.26).</p>
 </div>
 

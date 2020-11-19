@@ -1,0 +1,146 @@
+```{r load-packages, include = F}
+library(dplyr)
+library(knitr)
+library(corrplot)
+library(ggplot2)
+```
+```{r}
+options(scipen = 999)
+```
+
+
+# Clustering and classification
+
+## Loading and inspecting the data
+
+This week, we are going to need Boston data from the MASS package:
+```{r}
+# Access the MASS package
+library(MASS)
+
+# Load the Boston data
+data("Boston")
+```
+Here are the dimensions of the data:
+```{r}
+dim(Boston)
+```
+And here is the structure:
+```{r}
+str(Boston)
+```
+The data frame has 506 observations (rows) and 14 variables (columns). The data include information about housing values in suburbs of Boston. Each observation represents a suburb or a town. Information about the variables can be found here: https://stat.ethz.ch/R-manual/R-devel/library/MASS/html/Boston.html.
+
+Next, I'm going to calculate the correlation matrix and plot a visual overview.
+```{r}
+cor_matrix<-cor(Boston) %>% round(2)
+corrplot(cor_matrix, method="circle", type = "upper", cl.pos = "b", tl.pos = "d", tl.cex = 0.6)
+```
+
+The plot shows that variable chas, which is a dummy variable of tract bounding Charles River, is very little correlated to other variables. This is what I would expect of a dummy variable. The largest positive correlations are between index of accessibility to radial highways (rad) and full-value property-tax rate (tax) and nitrogen oxides concentration (nox) and proportion of non-retail business acres per town (indus). The largest negative correlations can be seen between proportion of owner-occupied units built prior to 1940 (age) and weighted mean of distances to five Boston employment centres (dis), nitrogen oxides concentration (nox) and weighted mean of distances to five Boston employment centres (dis), proportion of non-retail business acres per town (indus) and weighted mean of distances to five Boston employment centres (dis), and lower status of the population (lstat) and median value of owner-occupied homes (medv).
+
+Here's a summary of the data:
+```{r}
+summary(Boston)
+```
+The summary reveals that some of the variables are notably skewed. For example, the crime rate (crim) at third quartile is 3.68 but the maximum crime rate is 88.98.
+
+## Standardising the data
+
+I'll standardise the data set by subtracting the column means from the corresponding columns and dividing the difference by the standard deviation.
+```{r}
+boston_scaled <- scale(Boston)
+```
+Let's see how the variables changed:
+```{r}
+summary(boston_scaled)
+```
+Now the mean of each variable is 0. The standardised values show how many standard deviations the observation differs from the mean.
+
+Here I'm creating a categorical variable from the continuous variable of the crime rate. I'm also removing the original crime rate variable from the data set and adding the new categorical crime rate variable to it.
+```{r}
+boston_scaled <- as.data.frame(boston_scaled)
+bins <- quantile(boston_scaled$crim)
+crime <- cut(boston_scaled$crim, breaks = bins, include.lowest = TRUE, label = c("low", "med_low", "med_high", "high"))
+boston_scaled <- dplyr::select(boston_scaled, -crim)
+boston_scaled <- data.frame(boston_scaled, crime)
+```
+
+## Creating a training set and a test set
+
+I'm splitting the data into a training set (20% of the data) and a test set (80% of the data).
+```{r}
+n <- nrow(boston_scaled)
+ind <- sample(n,  size = n * 0.8)
+train <- boston_scaled[ind,]
+test <- boston_scaled[-ind,]
+```
+
+## Linear discriminant analysis
+
+Then it's time to fit the linear discriminant analysis on the training set. I'm using the categorical crime rate as the target variable and all the other variables as predictors.
+```{r}
+lda.fit <- lda(crime ~ ., data = train)
+```
+
+This is how the LDA biplot looks like:
+```{r, fig.height=8, fig.width=12}
+lda.arrows <- function(x, myscale = 1, arrow_heads = 0.1, color = "orange", tex = 0.75, choices = c(1,2)){
+  heads <- coef(x)
+  arrows(x0 = 0, y0 = 0, 
+         x1 = myscale * heads[,choices[1]], 
+         y1 = myscale * heads[,choices[2]], col=color, length = arrow_heads)
+  text(myscale * heads[,choices], labels = row.names(heads), 
+       cex = tex, col=color, pos=3)
+}
+classes <- as.numeric(train$crime)
+plot(lda.fit, dimen = 2, col = classes, pch = classes)
+lda.arrows(lda.fit, myscale = 2)
+```
+The biplot depicts observations classified by the different crime rates with different colours. The high crime rates form the most distinct cluster. The length of the arrows represents how strongly those variables contribute to the discrimination of the clusters. The index of accessibility to radial highways (rad) is clearly the most disriminating one.
+
+## Predictions
+
+Next, I'll save the crime categories from the test set and remove the crime variable from it.
+```{r}
+correct_classes <- test$crime
+test <- dplyr::select(test, -crime)
+```
+
+Now I'm going to use the LDA model based on the training data to predict the classes. I'll also cross tabulate the results.
+```{r}
+lda.pred <- predict(lda.fit, newdata = test)
+table(correct = correct_classes, predicted = lda.pred$class)
+```
+From the table above, we can see that most of the cases are predicted correctly. The performance seems to be best for the high crime rate category, where all cases are predicted correctly. Lower crime rates have more incorrectly predicted cases. Both low and medium high crime rates are quite often incorrectly predicted as medium low.
+
+## K-means
+
+To calculate the distances between the observations, I'm going to reload and standardise the Boston data set.
+```{r}
+library(MASS)
+data('Boston')
+boston_scaled <- scale(Boston)
+boston_scaled <- as.data.frame(boston_scaled)
+```
+Let's look at the euclidean distances between the observations:
+```{r}
+dist_eu <- dist(boston_scaled)
+summary(dist_eu)
+```
+
+I'll run k-means clustering algorithm on the data set. To determine the optimal number of clusters, I'll examine how the total within cluster sum of squares changes in relation to the number of clusters. I'll limit the maximum number of clusters to 10.
+```{r}
+km <-kmeans(boston_scaled, centers = 2)
+set.seed(123)
+k_max <- 10
+twcss <- sapply(1:k_max, function(k){kmeans(Boston, k)$tot.withinss})
+plot(x = 1:k_max, y = twcss, type = "l")
+```
+
+The largest change seems to be between one and two clusters. After that there are only smaller changes. Thus, two clusters seems to be appropriate. I'll visualise the two clusters  with a scatter plot matrix:
+```{r, fig.dim = c(15,15)}
+pairs(boston_scaled, col = km$cluster, lower.panel = NULL)
+```
+
+In most of the scatter plots, the two clusters seem to be reasonably distinct. The cluster with higher crime rates also has, for example, smaller proportion of large residential land lots, more industrial areas, higher nitrogen oxide concentration, smaller distance to employment centres,  better accessibility to radial highways, and larger pupil-teacher ratio.
