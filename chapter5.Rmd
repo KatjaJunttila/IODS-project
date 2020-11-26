@@ -69,4 +69,52 @@ biplot(pca_human_std, choices = 1:2, cex = c(0.8, 1), col = c("grey40", "deeppin
  
 Here we can see how variables correlate with principal components and with each other (Figure 2). The angles between the arrows can be interpreted as correlations between the variables and the angles between arrows and principal component axes as correlations between them. The first principal component is defined by two sets of variables that correlate positively with each other but that are negatively correlated with the other set. One set includes life expectancy, ratio of females to males with at least secondary education, gross national income per capita (gni), and expected years of schooling. The other set includes maternal mortality and adolescent birth rate. The first principal component seems to catch variation mostly related to human development factors. The second principal component is defined by percetange of female representatives in parliament and ratio of females to males in the labour force, which correlate positively with each other. The second principal component seems to catch variation related to gender equality factors.
 
+## Multiple correspondence analysis
+
+Multiple correspondence analysis can be used to analyse qualitative data, such as categorical variables. I'll run multiple correspondence analysis using tea data set from FactoMineR package.
+
+```{r}
+library(FactoMineR)
+data(tea)
+str(tea)
+```
+```{r}
+dim(tea)
+```
+The data contains 300 observations of 36 variables. Other variable types are categorical, but age is an integer. Therefore, I'll drop age from the analysis.
+```{r}
+tea <- tea %>% dplyr::select(-age)
+```
+
+```{r warning=F, fig.width=8, fig.asp=2}
+gather(tea) %>% ggplot(aes(value)) + 
+        geom_bar() +
+        theme_bw() +
+        facet_wrap("key", scales = "free") +
+        theme(
+        panel.grid.major=element_blank(), 
+        panel.grid.minor=element_blank(),
+        axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+```
+
+```{r}
+mca <- MCA(tea, graph = FALSE)
+summary(mca)
+```
+
+```{r, fig.height=10}
+plot(mca, invisible=c("ind"), habillage = "quali")
+```
+
+Multiple correspondence analysis with all variables looks quite messy and it's difficult to interpret. I'll concentrate on a few selected variables instead. I'll choose Tea, How, evening, sugar, where, and lunch. Tea tells whether a person drinks Earl Grey, black tea, or green tea. How describes whether tea is drunk alone or with lemon, milk, or other. Evening describes whether tea is enjoyed in the evening or not and sugar whether a person drinks tea with or without sugar. Where includes information on whether tea is bought from a chain store, tea shop, or from both chain store and tea shop. Lunch describes whether or not tea is enjoyed at lunch.
+```{r}
+keep_columns <- c("Tea", "How", "evening", "sugar", "where", "lunch")
+tea_time <- dplyr::select(tea, one_of(keep_columns))
+```
+```{r, fig.height=7, fig.width=10}
+mca <- MCA(tea_time, graph = FALSE)
+plot(mca, invisible=c("ind"), habillage = "quali")
+```
+
+The different variables are depicted with different colours in the plot. Here we can see how different tea preferences are related to each other. The most notable thing we can see here is that furthest away from each other are the preference for green tea and to add something other than lemon or milk to the tea. The tightest cluster, on the other hand, seems to be preference for Earl Grey, sugar, and drinking tea in he evening.
 
